@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Private Collection — Driver Portal</title>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --navy:#0a1628; --navy2:#112040; --blue:#1a3a6b;
+      --accent:#f0a500; --accent2:#ffc233;
+      --steel:#4a6fa5; --light:#e8edf5; --muted:#7a90b0;
+      --card:#132035; --border:rgba(74,111,165,0.3);
+      --success:#22c55e; --danger:#ef4444; --warning:#f59e0b;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:var(--navy); color:var(--light); font-family:'Barlow',sans-serif; min-height:100vh; }
+
+    .topbar {
+      background:var(--navy2); border-bottom:2px solid var(--accent);
+      padding:14px 24px; display:flex; align-items:center; justify-content:space-between;
+    }
+    .brand { font-family:'Barlow Condensed',sans-serif; font-size:1.3rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+    .brand span { color:var(--accent); }
+    .topbar-right { font-size:.75rem; color:var(--muted); text-align:right; }
+    #driverNameTop { color:var(--accent); font-weight:600; }
+
+    /* ── SCREENS ── */
+    .screen { display:none; }
+    .screen.active { display:block; }
+
+    /* ── PIN SCREEN ── */
+    #pinScreen {
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      min-height:calc(100vh - 53px); padding:40px 20px;
+      background:radial-gradient(ellipse at 50% 30%, rgba(26,58,107,0.5) 0%, transparent 70%);
+    }
+    .pin-card {
+      background:var(--card); border:1px solid var(--border); border-top:3px solid var(--accent);
+      padding:40px 32px; width:100%; max-width:380px; text-align:center;
+    }
+    .pin-card .logo { font-family:'Barlow Condensed',sans-serif; font-size:2rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; }
+    .pin-card .logo span { color:var(--accent); }
+    .pin-card .sub { font-size:.7rem; letter-spacing:.25em; text-transform:uppercase; color:var(--muted); margin-bottom:28px; display:block; margin-top:4px; }
+
+    .select-group { margin-bottom:18px; text-align:left; }
+    .select-group label { display:block; font-size:.62rem; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); margin-bottom:7px; }
+    .select-group select {
+      width:100%; background:rgba(255,255,255,.05); border:1px solid var(--border);
+      color:var(--light); font-family:'Barlow',sans-serif; font-size:.9rem;
+      padding:11px 14px; outline:none; transition:border .2s; border-radius:4px; appearance:none;
+    }
+    .select-group select:focus { border-color:var(--accent); }
+    .select-group select option { background:var(--navy2); }
+
+    .pin-label { font-size:.62rem; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); margin-bottom:10px; }
+    .pin-display { display:flex; justify-content:center; gap:12px; margin:10px 0 20px; }
+    .pin-dot { width:14px; height:14px; border-radius:50%; border:2px solid var(--steel); transition:all .2s; }
+    .pin-dot.filled { background:var(--accent); border-color:var(--accent); }
+
+    .pin-pad { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:20px; }
+    .pin-btn {
+      background:var(--blue); border:1px solid var(--border); color:var(--light);
+      font-family:'Barlow Condensed',sans-serif; font-size:1.4rem; font-weight:600;
+      padding:16px; cursor:pointer; transition:all .15s; border-radius:4px;
+    }
+    .pin-btn:hover { background:var(--steel); border-color:var(--accent); }
+    .pin-btn:active { transform:scale(.95); }
+    .pin-btn.clear { font-size:.8rem; letter-spacing:.1em; color:var(--muted); }
+    .pin-btn.zero { grid-column:2; }
+
+    .btn-login {
+      width:100%; background:var(--accent); color:var(--navy); border:none;
+      font-family:'Barlow Condensed',sans-serif; font-size:.9rem; font-weight:700;
+      letter-spacing:.15em; text-transform:uppercase; padding:14px; cursor:pointer;
+      transition:background .2s; border-radius:4px;
+    }
+    .btn-login:hover { background:var(--accent2); }
+    .pin-error { color:var(--danger); font-size:.8rem; margin-top:12px; min-height:20px; }
+
+    /* ── DRIVER DASH ── */
+    #driverDash { padding:24px 16px 80px; max-width:600px; margin:0 auto; }
+    .dash-greeting { margin-bottom:24px; }
+    .dash-greeting h2 { font-family:'Barlow Condensed',sans-serif; font-size:1.6rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; }
+    .dash-greeting p { font-size:.8rem; color:var(--muted); margin-top:4px; }
+    .vehicle-badge {
+      display:inline-flex; align-items:center; gap:8px; background:var(--blue);
+      border:1px solid var(--steel); padding:6px 14px; border-radius:4px;
+      font-size:.8rem; font-weight:600; margin-top:8px;
+    }
+    .vehicle-badge .dot { width:8px; height:8px; border-radius:50%; background:var(--success); }
+    .top-row { display:flex; justify-content:space-between; align-items:flex-start; }
+
+    .log-card {
+      background:var(--card); border:1px solid var(--border); border-top:3px solid var(--accent);
+      padding:24px; margin-bottom:20px; border-radius:4px;
+    }
+    .log-card h3 {
+      font-family:'Barlow Condensed',sans-serif; font-size:1rem; font-weight:700;
+      letter-spacing:.1em; text-transform:uppercase; color:var(--accent); margin-bottom:20px;
+      display:flex; align-items:center; gap:8px;
+    }
+    .log-card h3 svg { width:18px; height:18px; fill:var(--accent); }
+
+    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+    .form-row.full { grid-template-columns:1fr; }
+    .field label { display:block; font-size:.6rem; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+    .field input, .field select, .field textarea {
+      width:100%; background:rgba(255,255,255,.05); border:1px solid var(--border);
+      color:var(--light); font-family:'Barlow',sans-serif; font-size:.9rem;
+      padding:10px 12px; outline:none; transition:border .2s; border-radius:4px;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus { border-color:var(--accent); }
+    .field select option { background:var(--navy2); }
+    .field textarea { resize:vertical; min-height:70px; }
+
+    .fuel-bar-wrap { background:rgba(255,255,255,.08); border-radius:4px; height:10px; overflow:hidden; margin-top:6px; }
+    .fuel-bar-fill { height:100%; background:linear-gradient(90deg,var(--danger),var(--accent),var(--success)); border-radius:4px; transition:width .3s; }
+    .fuel-labels { display:flex; justify-content:space-between; font-size:.6rem; color:var(--muted); margin-top:4px; }
+
+    .btn-submit {
+      width:100%; background:var(--accent); color:var(--navy); border:none;
+      font-family:'Barlow Condensed',sans-serif; font-size:1rem; font-weight:700;
+      letter-spacing:.15em; text-transform:uppercase; padding:14px; cursor:pointer;
+      transition:background .2s; border-radius:4px; margin-top:8px;
+    }
+    .btn-submit:hover { background:var(--accent2); }
+    .btn-submit:disabled { opacity:.5; cursor:not-allowed; }
+
+    .recent-title { font-family:'Barlow Condensed',sans-serif; font-size:.8rem; font-weight:700; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); margin-bottom:12px; }
+    .log-entry {
+      background:var(--card); border:1px solid var(--border); border-left:3px solid var(--steel);
+      padding:14px 16px; margin-bottom:10px; display:grid; grid-template-columns:1fr auto; gap:8px; border-radius:4px;
+    }
+    .log-entry .le-top { font-weight:600; font-size:.9rem; }
+    .log-entry .le-detail { font-size:.75rem; color:var(--muted); margin-top:3px; }
+    .log-entry .le-time { font-size:.7rem; color:var(--muted); text-align:right; }
+    .log-entry .le-fuel { font-size:.75rem; color:var(--accent); font-weight:600; text-align:right; margin-top:3px; }
+
+    .btn-logout {
+      background:transparent; border:1px solid var(--border); color:var(--muted);
+      font-family:'Barlow',sans-serif; font-size:.75rem; padding:8px 18px;
+      cursor:pointer; transition:all .2s; border-radius:4px;
+    }
+    .btn-logout:hover { border-color:var(--danger); color:var(--danger); }
+
+    #toast {
+      position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(80px);
+      font-family:'Barlow',sans-serif; font-size:.85rem; font-weight:600;
+      padding:12px 28px; border-radius:4px; opacity:0; transition:all .3s; z-index:999; white-space:nowrap;
+    }
+    #toast.success { background:var(--success); color:white; }
+    #toast.error   { background:var(--danger); color:white; }
+    #toast.show    { transform:translateX(-50%) translateY(0); opacity:1; }
+
+    @media(max-width:480px){ .form-row{grid-template-columns:1fr;} .pin-card{padding:28px 16px;} }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">Private <span>Collection</span></div>
+  <div class="topbar-right">
+    <div id="driverNameTop">Driver Portal</div>
+    <div id="topDate"></div>
+  </div>
+</div>
+
+<!-- PIN LOGIN -->
+<div id="pinScreen" class="screen active">
+  <div class="pin-card">
+    <div class="logo">Private <span>Collection</span></div>
+    <span class="sub">Driver Login</span>
+
+    <div class="select-group">
+      <label>Select Your Name</label>
+      <select id="driverSelect">
+        <option value="">— Select driver —</option>
+      </select>
+    </div>
+
+    <div class="select-group">
+      <label>Select Your Vehicle</label>
+      <select id="vehicleSelect">
+        <option value="">— Select vehicle —</option>
+      </select>
+    </div>
+
+    <div class="pin-label">Enter Your PIN</div>
+    <div class="pin-display" id="pinDisplay">
+      <div class="pin-dot" id="d0"></div>
+      <div class="pin-dot" id="d1"></div>
+      <div class="pin-dot" id="d2"></div>
+      <div class="pin-dot" id="d3"></div>
+    </div>
+
+    <div class="pin-pad">
+      <button class="pin-btn" onclick="pinPress('1')">1</button>
+      <button class="pin-btn" onclick="pinPress('2')">2</button>
+      <button class="pin-btn" onclick="pinPress('3')">3</button>
+      <button class="pin-btn" onclick="pinPress('4')">4</button>
+      <button class="pin-btn" onclick="pinPress('5')">5</button>
+      <button class="pin-btn" onclick="pinPress('6')">6</button>
+      <button class="pin-btn" onclick="pinPress('7')">7</button>
+      <button class="pin-btn" onclick="pinPress('8')">8</button>
+      <button class="pin-btn" onclick="pinPress('9')">9</button>
+      <button class="pin-btn clear" onclick="pinClear()">CLR</button>
+      <button class="pin-btn zero" onclick="pinPress('0')">0</button>
+      <button class="pin-btn clear" onclick="pinBack()">⌫</button>
+    </div>
+
+    <button class="btn-login" onclick="doLogin()">Sign In</button>
+    <div class="pin-error" id="pinError"></div>
+  </div>
+</div>
+
+<!-- DRIVER DASHBOARD -->
+<div id="driverDash" class="screen" style="display:none;">
+  <div style="max-width:600px;margin:0 auto;padding:24px 16px 80px;">
+    <div class="dash-greeting">
+      <div class="top-row">
+        <div>
+          <h2>Hello, <span id="greetName"></span></h2>
+          <p id="greetDate"></p>
+          <div class="vehicle-badge"><span class="dot"></span><span id="greetVehicle"></span></div>
+        </div>
+        <button class="btn-logout" onclick="doLogout()">Sign Out</button>
+      </div>
+    </div>
+
+    <div class="log-card">
+      <h3>
+        <svg viewBox="0 0 24 24"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg>
+        Log Trip / Refuel
+      </h3>
+
+      <div class="form-row">
+        <div class="field">
+          <label>Odometer Reading (km)</label>
+          <input type="number" id="odometer" placeholder="e.g. 45230"/>
+        </div>
+        <div class="field">
+          <label>Log Type</label>
+          <select id="logType" onchange="toggleFuelFields()">
+            <option value="trip">Trip / Journey</option>
+            <option value="refuel">Refuel Only</option>
+            <option value="both">Trip + Refuel</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="field">
+          <label>From (Origin)</label>
+          <input type="text" id="origin" placeholder="e.g. HQ Nairobi"/>
+        </div>
+        <div class="field">
+          <label>To (Destination)</label>
+          <input type="text" id="destination" placeholder="e.g. Naivasha"/>
+        </div>
+      </div>
+
+      <div class="form-row full">
+        <div class="field">
+          <label>Purpose of Journey</label>
+          <select id="purpose">
+            <option>Delivery</option>
+            <option>Site Visit</option>
+            <option>Staff Transport</option>
+            <option>Supplies Collection</option>
+            <option>Maintenance Run</option>
+            <option>Farm / Field Work</option>
+            <option>Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="fuelFields">
+        <div class="form-row">
+          <div class="field">
+            <label>Fuel Added (Litres)</label>
+            <input type="number" id="fuelLitres" placeholder="e.g. 40"/>
+          </div>
+          <div class="field">
+            <label>Fuel Cost (KES)</label>
+            <input type="number" id="fuelCost" placeholder="e.g. 7200"/>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label>Fuel Level After (%)</label>
+            <input type="number" id="fuelLevel" min="0" max="100" placeholder="e.g. 75" oninput="updateFuelBar()"/>
+            <div class="fuel-bar-wrap"><div class="fuel-bar-fill" id="fuelBarFill" style="width:0%"></div></div>
+            <div class="fuel-labels"><span>Empty</span><span>Half</span><span>Full</span></div>
+          </div>
+          <div class="field">
+            <label>Fuel Station</label>
+            <input type="text" id="fuelStation" placeholder="e.g. Total Naivasha"/>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row full">
+        <div class="field">
+          <label>Notes (optional)</label>
+          <textarea id="notes" placeholder="Any issues, observations…"></textarea>
+        </div>
+      </div>
+
+      <button class="btn-submit" id="submitBtn" onclick="submitLog()">Submit Log Entry</button>
+    </div>
+
+    <div class="recent-title">Your Recent Entries</div>
+    <div id="recentLogs"><div style="color:var(--muted);font-size:.85rem;">Loading…</div></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, doc, getDocs, addDoc, query, where, orderBy, limit }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  // ⬇⬇ PASTE YOUR FIREBASE CONFIG HERE ⬇⬇
+  const firebaseConfig = {
+    apiKey:            "AIzaSyDRtAqdJsvC-upb93VGp1pqqwO4Jxe3j7I",
+    authDomain:        "private-collection-fleet.firebaseapp.com",
+    projectId:         "private-collection-fleet",
+    storageBucket:     "private-collection-fleet.firebasestorage.app",
+    messagingSenderId: "707760724227",
+    appId:             "1:707760724227:web:4c8cbad421452832597136"
+  };
+  // ⬆⬆ END CONFIG ⬆⬆
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
+
+  let currentDriver  = null;
+  let currentVehicle = null;
+  let pinValue       = '';
+  let driversMap     = {}; // driverId → driver data
+
+  const now     = new Date();
+  const dateStr = now.toLocaleDateString('en-KE',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('topDate').textContent = dateStr;
+
+  // ── LOAD DRIVERS & VEHICLES ────────────────────────────────────
+  async function loadSelects() {
+    // Drivers
+    const dSnap = await getDocs(collection(db,'drivers'));
+    const dSel  = document.getElementById('driverSelect');
+    dSnap.forEach(d => {
+      const dr = d.data();
+      driversMap[d.id] = { ...dr, id: d.id };
+      const opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = dr.name;
+      dSel.appendChild(opt);
+    });
+
+    // Vehicles
+    const vSnap = await getDocs(collection(db,'vehicles'));
+    const vSel  = document.getElementById('vehicleSelect');
+    vSnap.forEach(d => {
+      const v = d.data();
+      const opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = `${v.reg} — ${v.name} (${v.branch})`;
+      opt.dataset.reg    = v.reg;
+      opt.dataset.name   = v.name;
+      opt.dataset.branch = v.branch;
+      opt.dataset.type   = v.type;
+      vSel.appendChild(opt);
+    });
+  }
+  loadSelects();
+
+  // ── PIN ────────────────────────────────────────────────────────
+  window.pinPress = n => { if(pinValue.length>=4) return; pinValue+=n; updateDots(); };
+  window.pinBack  = () => { pinValue=pinValue.slice(0,-1); updateDots(); };
+  window.pinClear = () => { pinValue=''; updateDots(); };
+  function updateDots() {
+    for(let i=0;i<4;i++) document.getElementById('d'+i).classList.toggle('filled', i<pinValue.length);
+  }
+
+  // ── LOGIN ──────────────────────────────────────────────────────
+  window.doLogin = () => {
+    const driverId = document.getElementById('driverSelect').value;
+    const vSel     = document.getElementById('vehicleSelect');
+    const err      = document.getElementById('pinError');
+
+    if (!driverId)      { err.textContent='Please select your name.';    return; }
+    if (!vSel.value)    { err.textContent='Please select your vehicle.'; return; }
+    if (!pinValue)      { err.textContent='Please enter your PIN.';      return; }
+
+    const driver = driversMap[driverId];
+    if (!driver)        { err.textContent='Driver not found.'; return; }
+    if (driver.pin !== pinValue) {
+      err.textContent='Incorrect PIN. Please try again.';
+      window.pinClear(); return;
+    }
+
+    err.textContent = '';
+    const opt = vSel.options[vSel.selectedIndex];
+    currentDriver  = driver;
+    currentVehicle = { id:vSel.value, reg:opt.dataset.reg, name:opt.dataset.name, branch:opt.dataset.branch, type:opt.dataset.type };
+
+    document.getElementById('greetName').textContent    = driver.name;
+    document.getElementById('greetDate').textContent    = dateStr;
+    document.getElementById('greetVehicle').textContent = `${currentVehicle.reg} — ${currentVehicle.name}`;
+    document.getElementById('driverNameTop').textContent = driver.name;
+
+    document.getElementById('pinScreen').style.display   = 'none';
+    document.getElementById('driverDash').style.display  = 'block';
+    loadRecentLogs();
+  };
+
+  window.doLogout = () => {
+    currentDriver=null; currentVehicle=null; window.pinClear();
+    document.getElementById('driverSelect').value='';
+    document.getElementById('vehicleSelect').value='';
+    document.getElementById('driverDash').style.display='none';
+    document.getElementById('pinScreen').style.display='flex';
+    document.getElementById('driverNameTop').textContent='Driver Portal';
+  };
+
+  // ── FUEL BAR ───────────────────────────────────────────────────
+  window.updateFuelBar = () => {
+    const l = parseInt(document.getElementById('fuelLevel').value)||0;
+    document.getElementById('fuelBarFill').style.width = Math.min(100,Math.max(0,l))+'%';
+  };
+  window.toggleFuelFields = () => {
+    document.getElementById('fuelFields').style.display =
+      document.getElementById('logType').value==='trip' ? 'none' : 'block';
+  };
+
+  // ── SUBMIT ─────────────────────────────────────────────────────
+  window.submitLog = async () => {
+    const odometer    = document.getElementById('odometer').value;
+    const logType     = document.getElementById('logType').value;
+    const origin      = document.getElementById('origin').value.trim();
+    const destination = document.getElementById('destination').value.trim();
+    const purpose     = document.getElementById('purpose').value;
+    const notes       = document.getElementById('notes').value.trim();
+    const fuelLitres  = document.getElementById('fuelLitres').value;
+    const fuelCost    = document.getElementById('fuelCost').value;
+    const fuelLevel   = document.getElementById('fuelLevel').value;
+    const fuelStation = document.getElementById('fuelStation').value.trim();
+
+    if (!odometer)          { showToast('Enter odometer reading','error'); return; }
+    if (!origin||!destination) { showToast('Enter origin and destination','error'); return; }
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled=true; btn.textContent='Saving…';
+
+    const entry = {
+      timestamp:   new Date().toISOString(),
+      date:        now.toLocaleDateString('en-KE'),
+      driverId:    currentDriver.id,
+      driver:      currentDriver.name,
+      vehicleId:   currentVehicle.id,
+      vehicleReg:  currentVehicle.reg,
+      vehicleName: currentVehicle.name,
+      branch:      currentVehicle.branch,
+      vehicleType: currentVehicle.type,
+      odometer:    parseFloat(odometer),
+      logType, origin, destination, purpose, notes,
+      fuelLitres:  fuelLitres ? parseFloat(fuelLitres) : null,
+      fuelCost:    fuelCost   ? parseFloat(fuelCost)   : null,
+      fuelLevel:   fuelLevel  ? parseFloat(fuelLevel)  : null,
+      fuelStation: fuelStation||null,
+    };
+
+    try {
+      await addDoc(collection(db,'logs'), entry);
+      showToast('✓ Log saved!','success');
+      ['odometer','origin','destination','notes','fuelLitres','fuelCost','fuelLevel','fuelStation']
+        .forEach(id => document.getElementById(id).value='');
+      document.getElementById('fuelBarFill').style.width='0%';
+      loadRecentLogs();
+    } catch(e) { showToast('Save failed: '+e.message,'error'); }
+
+    btn.disabled=false; btn.textContent='Submit Log Entry';
+  };
+
+  // ── RECENT LOGS ────────────────────────────────────────────────
+  async function loadRecentLogs() {
+    const container = document.getElementById('recentLogs');
+    try {
+      const q = query(collection(db,'logs'),
+        where('vehicleId','==',currentVehicle.id),
+        orderBy('timestamp','desc'), limit(5));
+      const snap = await getDocs(q);
+      if(snap.empty){ container.innerHTML=`<div style="color:var(--muted);font-size:.85rem;font-style:italic;">No entries yet.</div>`; return; }
+      container.innerHTML='';
+      snap.forEach(d => {
+        const l = d.data();
+        const t = new Date(l.timestamp).toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit'});
+        container.innerHTML+=`
+          <div class="log-entry">
+            <div>
+              <div class="le-top">${l.origin} → ${l.destination}</div>
+              <div class="le-detail">${l.purpose} · ${l.logType} · Odo: ${l.odometer?.toLocaleString()} km</div>
+            </div>
+            <div>
+              <div class="le-time">${l.date}<br>${t}</div>
+              ${l.fuelLitres?`<div class="le-fuel">${l.fuelLitres}L</div>`:''}
+            </div>
+          </div>`;
+      });
+    } catch(e) { container.innerHTML=`<div style="color:var(--muted);">Could not load entries.</div>`; }
+  }
+
+  // ── TOAST ──────────────────────────────────────────────────────
+  window.showToast = (msg, type='success') => {
+    const t=document.getElementById('toast');
+    t.textContent=msg; t.className=type+' show';
+    setTimeout(()=>t.className='',3000);
+  };
+</script>
+</body>
+</html>

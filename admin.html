@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Private Collection — Fleet Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --navy:#0a1628; --navy2:#112040; --blue:#1a3a6b;
+      --accent:#f0a500; --accent2:#ffc233;
+      --steel:#4a6fa5; --light:#e8edf5; --muted:#7a90b0;
+      --card:#132035; --border:rgba(74,111,165,0.3);
+      --success:#22c55e; --danger:#ef4444; --warning:#f59e0b;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:var(--navy); color:var(--light); font-family:'Barlow',sans-serif; min-height:100vh; }
+
+    /* ── LOGIN ── */
+    #loginScreen {
+      display:flex; align-items:center; justify-content:center; min-height:100vh;
+      background:radial-gradient(ellipse at 50% 30%, rgba(26,58,107,0.4) 0%, transparent 70%);
+    }
+    .login-card {
+      background:var(--card); border:1px solid var(--border); border-top:3px solid var(--accent);
+      padding:48px 40px; width:100%; max-width:400px; text-align:center; border-radius:4px;
+    }
+    .login-card .logo { font-family:'Barlow Condensed',sans-serif; font-size:1.8rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+    .login-card .logo span { color:var(--accent); }
+    .login-card .sub { font-size:.65rem; letter-spacing:.25em; text-transform:uppercase; color:var(--muted); margin-bottom:36px; display:block; margin-top:6px; }
+    .lfield { margin-bottom:18px; text-align:left; }
+    .lfield label { display:block; font-size:.6rem; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+    .lfield input {
+      width:100%; background:rgba(255,255,255,.05); border:1px solid var(--border);
+      color:var(--light); font-family:'Barlow',sans-serif; font-size:.9rem;
+      padding:11px 14px; outline:none; transition:border .2s; border-radius:4px;
+    }
+    .lfield input:focus { border-color:var(--accent); }
+    .btn-login {
+      width:100%; background:var(--accent); color:var(--navy); border:none;
+      font-family:'Barlow Condensed',sans-serif; font-size:.95rem; font-weight:700;
+      letter-spacing:.15em; text-transform:uppercase; padding:13px; cursor:pointer;
+      transition:background .2s; border-radius:4px;
+    }
+    .btn-login:hover { background:var(--accent2); }
+    .login-error { color:var(--danger); font-size:.8rem; margin-top:10px; min-height:18px; }
+
+    /* ── TOPBAR ── */
+    #adminPanel { display:none; }
+    .topbar {
+      background:var(--navy2); border-bottom:2px solid var(--accent);
+      padding:14px 28px; display:flex; align-items:center; justify-content:space-between;
+      position:sticky; top:0; z-index:200;
+    }
+    .brand { font-family:'Barlow Condensed',sans-serif; font-size:1.3rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+    .brand span { color:var(--accent); }
+    .brand .sub-brand { font-size:.6rem; letter-spacing:.2em; color:var(--muted); display:block; margin-top:2px; }
+    .topbar-right { display:flex; gap:10px; align-items:center; }
+    .btn-sm {
+      background:transparent; border:1px solid var(--border); color:var(--muted);
+      font-family:'Barlow',sans-serif; font-size:.7rem; letter-spacing:.1em; text-transform:uppercase;
+      padding:7px 16px; cursor:pointer; transition:all .2s; border-radius:4px; text-decoration:none; display:inline-block;
+    }
+    .btn-sm:hover { border-color:var(--accent); color:var(--accent); }
+
+    /* ── TAB NAV ── */
+    .tab-nav {
+      background:var(--navy2); border-bottom:1px solid var(--border);
+      display:flex; gap:0; overflow-x:auto; padding:0 28px;
+    }
+    .tab-nav button {
+      background:transparent; border:none; border-bottom:3px solid transparent;
+      color:var(--muted); font-family:'Barlow Condensed',sans-serif; font-size:.85rem;
+      font-weight:700; letter-spacing:.15em; text-transform:uppercase;
+      padding:14px 20px; cursor:pointer; transition:all .2s; white-space:nowrap;
+    }
+    .tab-nav button:hover { color:var(--light); }
+    .tab-nav button.active { color:var(--accent); border-bottom-color:var(--accent); }
+
+    /* ── CONTENT ── */
+    .content { max-width:1300px; margin:0 auto; padding:32px 24px 80px; }
+    .tab-panel { display:none; }
+    .tab-panel.active { display:block; }
+
+    /* ── SECTION TITLE ── */
+    .section-title {
+      font-family:'Barlow Condensed',sans-serif; font-size:1rem; font-weight:700;
+      letter-spacing:.15em; text-transform:uppercase; color:var(--accent);
+      margin-bottom:16px; margin-top:32px; display:flex; align-items:center; gap:10px;
+    }
+    .section-title:first-child { margin-top:0; }
+    .section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+    /* ── KPI ── */
+    .kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; margin-bottom:32px; }
+    .kpi-card {
+      background:var(--card); border:1px solid var(--border); border-top:3px solid var(--steel);
+      padding:20px; border-radius:4px;
+    }
+    .kpi-card.accent { border-top-color:var(--accent); }
+    .kpi-card.success { border-top-color:var(--success); }
+    .kpi-card.danger  { border-top-color:var(--danger); }
+    .kpi-label { font-size:.6rem; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+    .kpi-value { font-family:'Barlow Condensed',sans-serif; font-size:2rem; font-weight:700; line-height:1; }
+    .kpi-unit  { font-size:.8rem; color:var(--muted); margin-left:4px; }
+    .kpi-sub   { font-size:.72rem; color:var(--muted); margin-top:4px; }
+
+    /* ── FILTER BAR ── */
+    .filter-bar { display:flex; gap:12px; margin-bottom:24px; flex-wrap:wrap; align-items:center; }
+    .filter-bar label { font-size:.65rem; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); }
+    .filter-bar select, .filter-bar input {
+      background:var(--card); border:1px solid var(--border); color:var(--light);
+      font-family:'Barlow',sans-serif; font-size:.8rem; padding:8px 12px;
+      outline:none; border-radius:4px; transition:border .2s;
+    }
+    .filter-bar select:focus, .filter-bar input:focus { border-color:var(--accent); }
+    .filter-bar select option { background:var(--navy2); }
+    .btn-filter {
+      background:var(--accent); color:var(--navy); border:none;
+      font-family:'Barlow Condensed',sans-serif; font-size:.8rem; font-weight:700;
+      letter-spacing:.1em; text-transform:uppercase; padding:9px 20px; cursor:pointer; border-radius:4px;
+    }
+    .btn-filter:hover { background:var(--accent2); }
+
+    /* ── BRANCH CARDS ── */
+    .branch-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px; margin-bottom:8px; }
+    .branch-card { background:var(--card); border:1px solid var(--border); padding:20px; border-radius:4px; }
+    .branch-name { font-family:'Barlow Condensed',sans-serif; font-size:1.1rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); margin-bottom:12px; }
+    .branch-stat { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid rgba(74,111,165,.15); font-size:.82rem; }
+    .branch-stat:last-child { border-bottom:none; }
+    .branch-stat .val { font-weight:600; }
+
+    /* ── TABLES ── */
+    .table-wrap { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; font-size:.82rem; }
+    thead tr { background:var(--navy2); }
+    th { text-align:left; padding:12px 14px; font-family:'Barlow Condensed',sans-serif; font-size:.7rem; font-weight:700; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); border-bottom:2px solid var(--border); }
+    td { padding:12px 14px; border-bottom:1px solid rgba(74,111,165,.15); vertical-align:middle; }
+    tr:hover td { background:rgba(74,111,165,.06); }
+    .badge { display:inline-block; padding:3px 10px; border-radius:3px; font-size:.65rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+    .eff-bar-wrap { background:rgba(255,255,255,.08); border-radius:3px; height:6px; width:80px; overflow:hidden; margin-top:4px; }
+    .eff-bar { height:100%; border-radius:3px; }
+
+    /* ── MANAGE PANELS ── */
+    .manage-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+    .manage-card { background:var(--card); border:1px solid var(--border); padding:24px; border-radius:4px; }
+    .manage-card h4 { font-family:'Barlow Condensed',sans-serif; font-size:.95rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--accent); margin-bottom:18px; }
+    .mfield { margin-bottom:12px; }
+    .mfield label { display:block; font-size:.58rem; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); margin-bottom:5px; }
+    .mfield input, .mfield select {
+      width:100%; background:rgba(255,255,255,.05); border:1px solid var(--border);
+      color:var(--light); font-family:'Barlow',sans-serif; font-size:.85rem;
+      padding:9px 12px; outline:none; border-radius:4px; transition:border .2s;
+    }
+    .mfield input:focus, .mfield select:focus { border-color:var(--accent); }
+    .mfield select option { background:var(--navy2); }
+    .mrow { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .btn-add {
+      background:var(--accent); color:var(--navy); border:none;
+      font-family:'Barlow Condensed',sans-serif; font-size:.85rem; font-weight:700;
+      letter-spacing:.12em; text-transform:uppercase; padding:10px 24px;
+      cursor:pointer; border-radius:4px; transition:background .2s; margin-top:4px;
+    }
+    .btn-add:hover { background:var(--accent2); }
+
+    .list-item {
+      display:flex; justify-content:space-between; align-items:center;
+      padding:10px 0; border-bottom:1px solid rgba(74,111,165,.15); font-size:.82rem;
+    }
+    .list-item:last-child { border-bottom:none; }
+    .list-item-info { flex:1; }
+    .list-item-info strong { display:block; }
+    .list-item-info span { font-size:.72rem; color:var(--muted); }
+    .list-actions { display:flex; gap:6px; }
+    .btn-edit {
+      background:transparent; border:1px solid rgba(74,111,165,.4); color:var(--steel);
+      font-size:.65rem; padding:4px 10px; cursor:pointer; border-radius:3px; transition:all .2s;
+    }
+    .btn-edit:hover { border-color:var(--accent); color:var(--accent); }
+    .btn-remove {
+      background:transparent; border:1px solid rgba(239,68,68,.3); color:var(--danger);
+      font-size:.65rem; padding:4px 10px; cursor:pointer; border-radius:3px; transition:all .2s;
+    }
+    .btn-remove:hover { background:rgba(239,68,68,.1); }
+
+    /* PIN display in driver list */
+    .pin-chip {
+      display:inline-block; background:rgba(240,165,0,.12); border:1px solid rgba(240,165,0,.3);
+      color:var(--accent); font-size:.65rem; font-weight:700; padding:2px 8px; border-radius:3px;
+      letter-spacing:.1em; margin-left:8px;
+    }
+
+    /* Logs export row */
+    .logs-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+    .log-count { font-size:.75rem; color:var(--muted); }
+
+    /* Toast */
+    #toast {
+      position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(80px);
+      font-family:'Barlow',sans-serif; font-size:.85rem; font-weight:600;
+      padding:12px 28px; border-radius:4px; opacity:0; transition:all .3s; z-index:999; white-space:nowrap;
+    }
+    #toast.success { background:var(--success); color:white; }
+    #toast.error   { background:var(--danger); color:white; }
+    #toast.show    { transform:translateX(-50%) translateY(0); opacity:1; }
+
+    @media(max-width:900px){ .manage-grid{grid-template-columns:1fr;} }
+    @media(max-width:600px){ .mrow{grid-template-columns:1fr;} .kpi-grid{grid-template-columns:1fr 1fr;} }
+    @media(max-width:400px){ .kpi-grid{grid-template-columns:1fr;} }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="logo">Private <span>Collection</span></div>
+    <span class="sub">Fleet Admin</span>
+    <div class="lfield"><label>Username</label><input type="text" id="adminUser" placeholder="admin"/></div>
+    <div class="lfield"><label>Password</label><input type="password" id="adminPass" placeholder="••••••••"/></div>
+    <button class="btn-login" onclick="doLogin()">Sign In</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="adminPanel">
+  <div class="topbar">
+    <div class="brand">Private <span>Collection</span><span class="sub-brand">Fleet Management</span></div>
+    <div class="topbar-right">
+      <span id="topDate" style="font-size:.72rem;color:var(--muted);"></span>
+      <a href="driver.html" target="_blank" class="btn-sm">Driver Portal ↗</a>
+      <button class="btn-sm" onclick="doLogout()">Sign Out</button>
+    </div>
+  </div>
+
+  <!-- TAB NAV -->
+  <div class="tab-nav">
+    <button class="active" onclick="switchTab('dashboard',this)">Dashboard</button>
+    <button onclick="switchTab('drivers',this)">Drivers</button>
+    <button onclick="switchTab('vehicles',this)">Vehicles</button>
+    <button onclick="switchTab('branches',this)">Branches</button>
+    <button onclick="switchTab('types',this)">Vehicle Types</button>
+    <button onclick="switchTab('logs',this)">All Logs</button>
+  </div>
+
+  <div class="content">
+
+    <!-- ══ DASHBOARD TAB ══ -->
+    <div class="tab-panel active" id="tab-dashboard">
+      <div class="filter-bar">
+        <label>Branch:</label>
+        <select id="filterBranch" onchange="loadDashboard()">
+          <option value="all">All Branches</option>
+        </select>
+        <label>From:</label><input type="date" id="filterFrom"/>
+        <label>To:</label><input type="date" id="filterTo"/>
+        <button class="btn-filter" onclick="loadDashboard()">Apply</button>
+        <button class="btn-sm" onclick="resetFilters()">Reset</button>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card accent"><div class="kpi-label">Total Trips</div><div class="kpi-value" id="kpiTrips">—</div><div class="kpi-sub">Logged journeys</div></div>
+        <div class="kpi-card success"><div class="kpi-label">Est. Distance</div><div class="kpi-value" id="kpiDist">—<span class="kpi-unit">km</span></div><div class="kpi-sub">From odometer</div></div>
+        <div class="kpi-card"><div class="kpi-label">Fuel Used</div><div class="kpi-value" id="kpiFuel">—<span class="kpi-unit">L</span></div><div class="kpi-sub">Total refuelled</div></div>
+        <div class="kpi-card danger"><div class="kpi-label">Fuel Spend</div><div class="kpi-value" id="kpiCost">—</div><div class="kpi-sub">KES total</div></div>
+        <div class="kpi-card"><div class="kpi-label">Fleet</div><div class="kpi-value" id="kpiFleet">—</div><div class="kpi-sub">Active vehicles</div></div>
+        <div class="kpi-card success"><div class="kpi-label">Avg Efficiency</div><div class="kpi-value" id="kpiEff">—<span class="kpi-unit">km/L</span></div><div class="kpi-sub">All vehicles</div></div>
+      </div>
+
+      <div class="section-title">Branch Comparison</div>
+      <div class="branch-grid" id="branchGrid"><div style="color:var(--muted);font-size:.85rem;">Loading…</div></div>
+
+      <div class="section-title" style="margin-top:32px;">Vehicle Efficiency</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Registration</th><th>Vehicle</th><th>Type</th><th>Branch</th><th>Trips</th><th>Fuel (L)</th><th>Spend (KES)</th><th>Efficiency</th></tr></thead>
+          <tbody id="vehicleTableBody"><tr><td colspan="8" style="color:var(--muted);">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══ DRIVERS TAB ══ -->
+    <div class="tab-panel" id="tab-drivers">
+      <div class="manage-grid">
+        <div class="manage-card">
+          <h4 id="driverFormTitle">Add Driver</h4>
+          <div class="mfield"><label>Full Name</label><input type="text" id="driverName" placeholder="e.g. John Kamau"/></div>
+          <div class="mrow">
+            <div class="mfield"><label>PIN (4 digits)</label><input type="number" id="driverPin" placeholder="e.g. 1234" maxlength="4"/></div>
+            <div class="mfield"><label>Branch</label><select id="driverBranch"><option value="">— Select —</option></select></div>
+          </div>
+          <div class="mfield"><label>Role</label>
+            <select id="driverRole">
+              <option value="Driver">Driver</option>
+              <option value="Operator">Tractor Operator</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <input type="hidden" id="editDriverId"/>
+          <button class="btn-add" onclick="saveDriver()">Save Driver</button>
+          <button class="btn-sm" id="cancelDriverEdit" style="display:none;margin-left:8px;" onclick="cancelDriverEdit()">Cancel</button>
+        </div>
+        <div class="manage-card">
+          <h4>Drivers (<span id="driverCount">0</span>)</h4>
+          <div id="driverList"><div style="color:var(--muted);font-size:.85rem;">Loading…</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ VEHICLES TAB ══ -->
+    <div class="tab-panel" id="tab-vehicles">
+      <div class="manage-grid">
+        <div class="manage-card">
+          <h4 id="vehicleFormTitle">Add Vehicle</h4>
+          <div class="mrow">
+            <div class="mfield"><label>Registration</label><input type="text" id="vReg" placeholder="e.g. KDE 005E"/></div>
+            <div class="mfield"><label>Vehicle Name</label><input type="text" id="vName" placeholder="e.g. Toyota Hilux"/></div>
+          </div>
+          <div class="mrow">
+            <div class="mfield"><label>Type</label><select id="vType"><option value="">— Select type —</option></select></div>
+            <div class="mfield"><label>Branch</label><select id="vBranch"><option value="">— Select branch —</option></select></div>
+          </div>
+          <div class="mfield"><label>Year (optional)</label><input type="number" id="vYear" placeholder="e.g. 2019"/></div>
+          <input type="hidden" id="editVehicleId"/>
+          <button class="btn-add" onclick="saveVehicle()">Save Vehicle</button>
+          <button class="btn-sm" id="cancelVehicleEdit" style="display:none;margin-left:8px;" onclick="cancelVehicleEdit()">Cancel</button>
+        </div>
+        <div class="manage-card">
+          <h4>Fleet (<span id="vehicleCount">0</span>)</h4>
+          <div id="vehicleList"><div style="color:var(--muted);font-size:.85rem;">Loading…</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ BRANCHES TAB ══ -->
+    <div class="tab-panel" id="tab-branches">
+      <div class="manage-grid">
+        <div class="manage-card">
+          <h4 id="branchFormTitle">Add Branch</h4>
+          <div class="mfield"><label>Branch Name</label><input type="text" id="branchName" placeholder="e.g. Poa Place"/></div>
+          <div class="mfield"><label>Location / Notes</label><input type="text" id="branchLocation" placeholder="e.g. Nakuru County"/></div>
+          <input type="hidden" id="editBranchId"/>
+          <button class="btn-add" onclick="saveBranch()">Save Branch</button>
+          <button class="btn-sm" id="cancelBranchEdit" style="display:none;margin-left:8px;" onclick="cancelBranchEdit()">Cancel</button>
+        </div>
+        <div class="manage-card">
+          <h4>Branches (<span id="branchCount">0</span>)</h4>
+          <div id="branchList"><div style="color:var(--muted);font-size:.85rem;">Loading…</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ VEHICLE TYPES TAB ══ -->
+    <div class="tab-panel" id="tab-types">
+      <div class="manage-grid">
+        <div class="manage-card">
+          <h4 id="typeFormTitle">Add Vehicle Type</h4>
+          <div class="mfield"><label>Type Name</label><input type="text" id="typeName" placeholder="e.g. Tractor, Truck, SUV…"/></div>
+          <div class="mfield"><label>Description (optional)</label><input type="text" id="typeDesc" placeholder="e.g. Heavy farm equipment"/></div>
+          <input type="hidden" id="editTypeId"/>
+          <button class="btn-add" onclick="saveType()">Save Type</button>
+          <button class="btn-sm" id="cancelTypeEdit" style="display:none;margin-left:8px;" onclick="cancelTypeEdit()">Cancel</button>
+        </div>
+        <div class="manage-card">
+          <h4>Vehicle Types (<span id="typeCount">0</span>)</h4>
+          <div id="typeList"><div style="color:var(--muted);font-size:.85rem;">Loading…</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ LOGS TAB ══ -->
+    <div class="tab-panel" id="tab-logs">
+      <div class="filter-bar">
+        <label>Branch:</label>
+        <select id="logFilterBranch"><option value="all">All Branches</option></select>
+        <label>Driver:</label>
+        <select id="logFilterDriver"><option value="all">All Drivers</option></select>
+        <label>From:</label><input type="date" id="logFilterFrom"/>
+        <label>To:</label><input type="date" id="logFilterTo"/>
+        <button class="btn-filter" onclick="renderLogsTab()">Apply</button>
+      </div>
+      <div class="logs-header">
+        <span class="log-count" id="logCount"></span>
+        <button class="btn-sm" onclick="exportCSV()">Export CSV</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Date & Time</th><th>Driver</th><th>Vehicle</th><th>Branch</th><th>Route</th><th>Purpose</th><th>Type</th><th>Odometer</th><th>Fuel (L)</th><th>Cost (KES)</th><th>Notes</th></tr></thead>
+          <tbody id="logsTableBody"><tr><td colspan="11" style="color:var(--muted);">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /adminPanel -->
+
+<div id="toast"></div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, doc, addDoc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, orderBy, limit }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  // ⬇⬇ PASTE YOUR FIREBASE CONFIG HERE ⬇⬇
+  const firebaseConfig = {
+    apiKey:            "AIzaSyDRtAqdJsvC-upb93VGp1pqqwO4Jxe3j7I",
+    authDomain:        "private-collection-fleet.firebaseapp.com",
+    projectId:         "private-collection-fleet",
+    storageBucket:     "private-collection-fleet.firebasestorage.app",
+    messagingSenderId: "707760724227",
+    appId:             "1:707760724227:web:4c8cbad421452832597136"
+  };
+  // ⬆⬆ END CONFIG ⬆⬆
+
+  const ADMIN = { username:'admin', password:'fleet2024' };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
+
+  let allLogs=[], allVehicles=[], allDrivers=[], allBranches=[], allTypes=[];
+
+  // ── AUTH ────────────────────────────────────────────────────────
+  window.doLogin = () => {
+    const u=document.getElementById('adminUser').value.trim();
+    const p=document.getElementById('adminPass').value;
+    if(u===ADMIN.username && p===ADMIN.password){
+      document.getElementById('loginScreen').style.display='none';
+      document.getElementById('adminPanel').style.display='block';
+      document.getElementById('topDate').textContent =
+        new Date().toLocaleDateString('en-KE',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+      setDefaultDates();
+      initAll();
+    } else { document.getElementById('loginError').textContent='Invalid credentials.'; }
+  };
+  document.getElementById('adminPass').addEventListener('keydown',e=>{ if(e.key==='Enter') window.doLogin(); });
+  window.doLogout = () => {
+    document.getElementById('adminPanel').style.display='none';
+    document.getElementById('loginScreen').style.display='flex';
+    ['adminUser','adminPass'].forEach(id=>document.getElementById(id).value='');
+  };
+
+  // ── TABS ─────────────────────────────────────────────────────────
+  window.switchTab = (name, btn) => {
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.tab-nav button').forEach(b=>b.classList.remove('active'));
+    document.getElementById('tab-'+name).classList.add('active');
+    btn.classList.add('active');
+    if(name==='logs') renderLogsTab();
+  };
+
+  // ── INIT ─────────────────────────────────────────────────────────
+  async function initAll() {
+    await Promise.all([loadBranches(), loadTypes(), loadDrivers(), loadVehicles(), loadLogs()]);
+    populateBranchFilters();
+    populateDriverFilter();
+    loadDashboard();
+  }
+
+  function setDefaultDates() {
+    const to=new Date(), from=new Date();
+    from.setDate(from.getDate()-30);
+    ['filterTo','logFilterTo'].forEach(id=>document.getElementById(id).value=to.toISOString().split('T')[0]);
+    ['filterFrom','logFilterFrom'].forEach(id=>document.getElementById(id).value=from.toISOString().split('T')[0]);
+  }
+
+  // ── BRANCHES ─────────────────────────────────────────────────────
+  async function loadBranches() {
+    const snap = await getDocs(collection(db,'branches'));
+    allBranches = [];
+    if(snap.empty) {
+      // Seed defaults
+      const defaults = [{name:'HQ Nairobi',location:'Nairobi'},{name:'Naivasha',location:'Nakuru County'},{name:'HQ Farm',location:'Nairobi'},{name:'Naivasha Farm',location:'Nakuru County'}];
+      for(const b of defaults) await addDoc(collection(db,'branches'),b);
+      return loadBranches();
+    }
+    snap.forEach(d=>allBranches.push({id:d.id,...d.data()}));
+    renderBranchList();
+    populateBranchSelects();
+  }
+
+  function renderBranchList() {
+    const list = document.getElementById('branchList');
+    document.getElementById('branchCount').textContent = allBranches.length;
+    if(!allBranches.length){ list.innerHTML=`<div style="color:var(--muted);font-size:.85rem;">No branches yet.</div>`; return; }
+    list.innerHTML='';
+    allBranches.forEach(b=>{
+      list.innerHTML+=`
+        <div class="list-item">
+          <div class="list-item-info"><strong>${b.name}</strong><span>${b.location||''}</span></div>
+          <div class="list-actions">
+            <button class="btn-edit" onclick="editBranch('${b.id}')">Edit</button>
+            <button class="btn-remove" onclick="deleteBranch('${b.id}')">Remove</button>
+          </div>
+        </div>`;
+    });
+  }
+
+  function populateBranchSelects() {
+    ['driverBranch','vBranch'].forEach(id=>{
+      const sel=document.getElementById(id);
+      const val=sel.value;
+      sel.innerHTML='<option value="">— Select —</option>';
+      allBranches.forEach(b=>sel.innerHTML+=`<option value="${b.name}">${b.name}</option>`);
+      sel.value=val;
+    });
+  }
+
+  function populateBranchFilters() {
+    ['filterBranch','logFilterBranch'].forEach(id=>{
+      const sel=document.getElementById(id);
+      sel.innerHTML='<option value="all">All Branches</option>';
+      allBranches.forEach(b=>sel.innerHTML+=`<option value="${b.name}">${b.name}</option>`);
+    });
+  }
+
+  window.saveBranch = async () => {
+    const name     = document.getElementById('branchName').value.trim();
+    const location = document.getElementById('branchLocation').value.trim();
+    const editId   = document.getElementById('editBranchId').value;
+    if(!name){ showToast('Enter a branch name','error'); return; }
+    try {
+      if(editId){ await updateDoc(doc(db,'branches',editId),{name,location}); showToast('Branch updated'); }
+      else      { await addDoc(collection(db,'branches'),{name,location});   showToast('Branch added'); }
+      cancelBranchEdit();
+      await loadBranches();
+      populateBranchFilters();
+    } catch(e){ showToast('Error: '+e.message,'error'); }
+  };
+
+  window.editBranch = async (id) => {
+    const b = allBranches.find(x=>x.id===id); if(!b) return;
+    document.getElementById('branchName').value     = b.name;
+    document.getElementById('branchLocation').value = b.location||'';
+    document.getElementById('editBranchId').value   = id;
+    document.getElementById('branchFormTitle').textContent = 'Edit Branch';
+    document.getElementById('cancelBranchEdit').style.display='inline-block';
+    window.switchTab('branches', document.querySelector('.tab-nav button:nth-child(4)'));
+  };
+
+  window.deleteBranch = async (id) => {
+    if(!confirm('Delete this branch?')) return;
+    await deleteDoc(doc(db,'branches',id));
+    showToast('Branch deleted');
+    await loadBranches(); populateBranchFilters();
+  };
+
+  window.cancelBranchEdit = () => {
+    document.getElementById('branchName').value=''; document.getElementById('branchLocation').value='';
+    document.getElementById('editBranchId').value='';
+    document.getElementById('branchFormTitle').textContent='Add Branch';
+    document.getElementById('cancelBranchEdit').style.display='none';
+  };
+
+  // ── VEHICLE TYPES ─────────────────────────────────────────────────
+  async function loadTypes() {
+    const snap = await getDocs(collection(db,'vehicleTypes'));
+    allTypes=[];
+    if(snap.empty){
+      const defaults=[{name:'Vehicle',desc:'Standard road vehicle'},{name:'Tractor',desc:'Farm/field equipment'},{name:'Truck',desc:'Heavy goods vehicle'},{name:'Pickup',desc:'Light goods vehicle'}];
+      for(const t of defaults) await addDoc(collection(db,'vehicleTypes'),t);
+      return loadTypes();
+    }
+    snap.forEach(d=>allTypes.push({id:d.id,...d.data()}));
+    renderTypeList();
+    populateTypeSelect();
+  }
+
+  function renderTypeList() {
+    const list=document.getElementById('typeList');
+    document.getElementById('typeCount').textContent=allTypes.length;
+    if(!allTypes.length){ list.innerHTML=`<div style="color:var(--muted);font-size:.85rem;">No types yet.</div>`; return; }
+    list.innerHTML='';
+    allTypes.forEach(t=>{
+      list.innerHTML+=`
+        <div class="list-item">
+          <div class="list-item-info"><strong>${t.name}</strong><span>${t.desc||''}</span></div>
+          <div class="list-actions">
+            <button class="btn-edit" onclick="editType('${t.id}')">Edit</button>
+            <button class="btn-remove" onclick="deleteType('${t.id}')">Remove</button>
+          </div>
+        </div>`;
+    });
+  }
+
+  function populateTypeSelect() {
+    const sel=document.getElementById('vType');
+    const val=sel.value;
+    sel.innerHTML='<option value="">— Select type —</option>';
+    allTypes.forEach(t=>sel.innerHTML+=`<option value="${t.name}">${t.name}</option>`);
+    sel.value=val;
+  }
+
+  window.saveType = async () => {
+    const name   = document.getElementById('typeName').value.trim();
+    const desc   = document.getElementById('typeDesc').value.trim();
+    const editId = document.getElementById('editTypeId').value;
+    if(!name){ showToast('Enter a type name','error'); return; }
+    try {
+      if(editId){ await updateDoc(doc(db,'vehicleTypes',editId),{name,desc}); showToast('Type updated'); }
+      else      { await addDoc(collection(db,'vehicleTypes'),{name,desc});    showToast('Type added'); }
+      cancelTypeEdit();
+      await loadTypes();
+    } catch(e){ showToast('Error: '+e.message,'error'); }
+  };
+
+  window.editType = async (id) => {
+    const t=allTypes.find(x=>x.id===id); if(!t) return;
+    document.getElementById('typeName').value=''; document.getElementById('typeName').value=t.name;
+    document.getElementById('typeDesc').value=t.desc||'';
+    document.getElementById('editTypeId').value=id;
+    document.getElementById('typeFormTitle').textContent='Edit Vehicle Type';
+    document.getElementById('cancelTypeEdit').style.display='inline-block';
+    window.switchTab('types', document.querySelector('.tab-nav button:nth-child(5)'));
+  };
+
+  window.deleteType = async (id) => {
+    if(!confirm('Delete this vehicle type?')) return;
+    await deleteDoc(doc(db,'vehicleTypes',id));
+    showToast('Type deleted'); await loadTypes();
+  };
+
+  window.cancelTypeEdit = () => {
+    document.getElementById('typeName').value=''; document.getElementById('typeDesc').value='';
+    document.getElementById('editTypeId').value='';
+    document.getElementById('typeFormTitle').textContent='Add Vehicle Type';
+    document.getElementById('cancelTypeEdit').style.display='none';
+  };
+
+  // ── DRIVERS ───────────────────────────────────────────────────────
+  async function loadDrivers() {
+    const snap=await getDocs(collection(db,'drivers'));
+    allDrivers=[];
+    snap.forEach(d=>allDrivers.push({id:d.id,...d.data()}));
+    renderDriverList();
+  }
+
+  function renderDriverList() {
+    const list=document.getElementById('driverList');
+    document.getElementById('driverCount').textContent=allDrivers.length;
+    if(!allDrivers.length){ list.innerHTML=`<div style="color:var(--muted);font-size:.85rem;">No drivers added yet.</div>`; return; }
+    list.innerHTML='';
+    allDrivers.forEach(d=>{
+      list.innerHTML+=`
+        <div class="list-item">
+          <div class="list-item-info">
+            <strong>${d.name} <span class="pin-chip">PIN: ${d.pin}</span></strong>
+            <span>${d.role||'Driver'} · ${d.branch||'—'}</span>
+          </div>
+          <div class="list-actions">
+            <button class="btn-edit" onclick="editDriver('${d.id}')">Edit</button>
+            <button class="btn-remove" onclick="deleteDriver('${d.id}')">Remove</button>
+          </div>
+        </div>`;
+    });
+  }
+
+  function populateDriverFilter() {
+    const sel=document.getElementById('logFilterDriver');
+    sel.innerHTML='<option value="all">All Drivers</option>';
+    allDrivers.forEach(d=>sel.innerHTML+=`<option value="${d.id}">${d.name}</option>`);
+  }
+
+  window.saveDriver = async () => {
+    const name   = document.getElementById('driverName').value.trim();
+    const pin    = String(document.getElementById('driverPin').value).trim();
+    const branch = document.getElementById('driverBranch').value;
+    const role   = document.getElementById('driverRole').value;
+    const editId = document.getElementById('editDriverId').value;
+    if(!name)           { showToast('Enter driver name','error'); return; }
+    if(!pin||pin.length!==4||isNaN(pin)){ showToast('PIN must be exactly 4 digits','error'); return; }
+    // Check PIN uniqueness (skip own PIN when editing)
+    const dup = allDrivers.find(d=>d.pin===pin && d.id!==editId);
+    if(dup){ showToast(`PIN ${pin} already used by ${dup.name}`,'error'); return; }
+    try {
+      if(editId){ await updateDoc(doc(db,'drivers',editId),{name,pin,branch,role}); showToast('Driver updated'); }
+      else      { await addDoc(collection(db,'drivers'),{name,pin,branch,role});    showToast('Driver added'); }
+      cancelDriverEdit();
+      await loadDrivers();
+      populateDriverFilter();
+    } catch(e){ showToast('Error: '+e.message,'error'); }
+  };
+
+  window.editDriver = async (id) => {
+    const d=allDrivers.find(x=>x.id===id); if(!d) return;
+    document.getElementById('driverName').value   = d.name;
+    document.getElementById('driverPin').value    = d.pin;
+    document.getElementById('driverBranch').value = d.branch||'';
+    document.getElementById('driverRole').value   = d.role||'Driver';
+    document.getElementById('editDriverId').value = id;
+    document.getElementById('driverFormTitle').textContent='Edit Driver';
+    document.getElementById('cancelDriverEdit').style.display='inline-block';
+    window.switchTab('drivers', document.querySelector('.tab-nav button:nth-child(2)'));
+  };
+
+  window.deleteDriver = async (id) => {
+    if(!confirm('Remove this driver?')) return;
+    await deleteDoc(doc(db,'drivers',id));
+    showToast('Driver removed'); await loadDrivers(); populateDriverFilter();
+  };
+
+  window.cancelDriverEdit = () => {
+    ['driverName','driverPin','editDriverId'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('driverBranch').value='';
+    document.getElementById('driverRole').value='Driver';
+    document.getElementById('driverFormTitle').textContent='Add Driver';
+    document.getElementById('cancelDriverEdit').style.display='none';
+  };
+
+  // ── VEHICLES ──────────────────────────────────────────────────────
+  async function loadVehicles() {
+    const snap=await getDocs(collection(db,'vehicles'));
+    allVehicles=[];
+    snap.forEach(d=>allVehicles.push({id:d.id,...d.data()}));
+    document.getElementById('vehicleCount').textContent=allVehicles.length;
+    document.getElementById('kpiFleet').textContent=allVehicles.length;
+    renderVehicleList();
+  }
+
+  function renderVehicleList() {
+    const list=document.getElementById('vehicleList');
+    document.getElementById('vehicleCount').textContent=allVehicles.length;
+    if(!allVehicles.length){ list.innerHTML=`<div style="color:var(--muted);font-size:.85rem;">No vehicles yet.</div>`; return; }
+    list.innerHTML='';
+    allVehicles.forEach(v=>{
+      list.innerHTML+=`
+        <div class="list-item">
+          <div class="list-item-info">
+            <strong>${v.reg} — ${v.name}</strong>
+            <span>${v.type||'—'} · ${v.branch||'—'}${v.year?' · '+v.year:''}</span>
+          </div>
+          <div class="list-actions">
+            <button class="btn-edit" onclick="editVehicle('${v.id}')">Edit</button>
+            <button class="btn-remove" onclick="deleteVehicle('${v.id}')">Remove</button>
+          </div>
+        </div>`;
+    });
+  }
+
+  window.saveVehicle = async () => {
+    const reg    = document.getElementById('vReg').value.trim().toUpperCase();
+    const name   = document.getElementById('vName').value.trim();
+    const type   = document.getElementById('vType').value;
+    const branch = document.getElementById('vBranch').value;
+    const year   = document.getElementById('vYear').value;
+    const editId = document.getElementById('editVehicleId').value;
+    if(!reg||!name){ showToast('Enter registration and name','error'); return; }
+    if(!type)      { showToast('Select a vehicle type','error'); return; }
+    if(!branch)    { showToast('Select a branch','error'); return; }
+    try {
+      const data={reg,name,type,branch,year:year||null};
+      if(editId){ await updateDoc(doc(db,'vehicles',editId),data); showToast('Vehicle updated'); }
+      else      { await addDoc(collection(db,'vehicles'),data);    showToast('Vehicle added'); }
+      cancelVehicleEdit();
+      await loadVehicles();
+    } catch(e){ showToast('Error: '+e.message,'error'); }
+  };
+
+  window.editVehicle = async (id) => {
+    const v=allVehicles.find(x=>x.id===id); if(!v) return;
+    document.getElementById('vReg').value    = v.reg;
+    document.getElementById('vName').value   = v.name;
+    document.getElementById('vType').value   = v.type||'';
+    document.getElementById('vBranch').value = v.branch||'';
+    document.getElementById('vYear').value   = v.year||'';
+    document.getElementById('editVehicleId').value=id;
+    document.getElementById('vehicleFormTitle').textContent='Edit Vehicle';
+    document.getElementById('cancelVehicleEdit').style.display='inline-block';
+    window.switchTab('vehicles', document.querySelector('.tab-nav button:nth-child(3)'));
+  };
+
+  window.deleteVehicle = async (id) => {
+    if(!confirm('Remove this vehicle?')) return;
+    await deleteDoc(doc(db,'vehicles',id));
+    showToast('Vehicle removed'); await loadVehicles();
+  };
+
+  window.cancelVehicleEdit = () => {
+    ['vReg','vName','vYear','editVehicleId'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('vType').value=''; document.getElementById('vBranch').value='';
+    document.getElementById('vehicleFormTitle').textContent='Add Vehicle';
+    document.getElementById('cancelVehicleEdit').style.display='none';
+  };
+
+  // ── LOGS ──────────────────────────────────────────────────────────
+  async function loadLogs() {
+    const snap=await getDocs(query(collection(db,'logs'),orderBy('timestamp','desc'),limit(500)));
+    allLogs=[];
+    snap.forEach(d=>allLogs.push({id:d.id,...d.data()}));
+  }
+
+  // ── DASHBOARD ─────────────────────────────────────────────────────
+  window.loadDashboard = async () => {
+    await loadLogs();
+    const branch  = document.getElementById('filterBranch').value;
+    const fromVal = document.getElementById('filterFrom').value;
+    const toVal   = document.getElementById('filterTo').value;
+    let logs = allLogs;
+    if(branch!=='all') logs=logs.filter(l=>l.branch===branch);
+    if(fromVal) logs=logs.filter(l=>l.timestamp>=new Date(fromVal).toISOString());
+    if(toVal)   logs=logs.filter(l=>l.timestamp<=new Date(toVal+'T23:59:59').toISOString());
+    renderKPIs(logs); renderBranchCards(logs); renderVehicleTable(logs);
+  };
+
+  window.resetFilters = () => { setDefaultDates(); document.getElementById('filterBranch').value='all'; loadDashboard(); };
+
+  function renderKPIs(logs) {
+    const fuel=logs.reduce((s,l)=>s+(l.fuelLitres||0),0);
+    const cost=logs.reduce((s,l)=>s+(l.fuelCost||0),0);
+    const vids=[...new Set(logs.map(l=>l.vehicleId))];
+    let dist=0;
+    vids.forEach(vid=>{
+      const vl=logs.filter(l=>l.vehicleId===vid).sort((a,b)=>a.timestamp.localeCompare(b.timestamp));
+      if(vl.length>=2){ const f=vl[0].odometer,l2=vl[vl.length-1].odometer; if(l2>f) dist+=l2-f; }
+    });
+    const eff=fuel>0&&dist>0?(dist/fuel).toFixed(1):'—';
+    document.getElementById('kpiTrips').textContent=logs.length.toLocaleString();
+    document.getElementById('kpiDist').innerHTML=dist>0?`${dist.toLocaleString()}<span class="kpi-unit">km</span>`:`—<span class="kpi-unit">km</span>`;
+    document.getElementById('kpiFuel').innerHTML=`${fuel.toFixed(1)}<span class="kpi-unit">L</span>`;
+    document.getElementById('kpiCost').textContent=cost>0?cost.toLocaleString():'—';
+    document.getElementById('kpiFleet').textContent=allVehicles.length;
+    document.getElementById('kpiEff').innerHTML=`${eff}<span class="kpi-unit">km/L</span>`;
+  }
+
+  function renderBranchCards(logs) {
+    const grid=document.getElementById('branchGrid');
+    const branches=[...new Set(logs.map(l=>l.branch).filter(Boolean))].sort();
+    if(!branches.length){ grid.innerHTML=`<div style="color:var(--muted);font-size:.85rem;">No data.</div>`; return; }
+    grid.innerHTML='';
+    branches.forEach(br=>{
+      const bl=logs.filter(l=>l.branch===br);
+      const fuel=bl.reduce((s,l)=>s+(l.fuelLitres||0),0);
+      const cost=bl.reduce((s,l)=>s+(l.fuelCost||0),0);
+      const vids=[...new Set(bl.map(l=>l.vehicleId))];
+      grid.innerHTML+=`
+        <div class="branch-card">
+          <div class="branch-name">${br}</div>
+          <div class="branch-stat"><span>Trips Logged</span><span class="val">${bl.length}</span></div>
+          <div class="branch-stat"><span>Active Vehicles</span><span class="val">${vids.length}</span></div>
+          <div class="branch-stat"><span>Fuel Used</span><span class="val">${fuel.toFixed(1)} L</span></div>
+          <div class="branch-stat"><span>Fuel Spend</span><span class="val">KES ${cost.toLocaleString()}</span></div>
+        </div>`;
+    });
+  }
+
+  function renderVehicleTable(logs) {
+    const tbody=document.getElementById('vehicleTableBody');
+    const map={};
+    logs.forEach(l=>{
+      if(!map[l.vehicleId]) map[l.vehicleId]={reg:l.vehicleReg,name:l.vehicleName,type:l.vehicleType,branch:l.branch,trips:0,fuel:0,cost:0,odos:[]};
+      const v=map[l.vehicleId]; v.trips++; v.fuel+=(l.fuelLitres||0); v.cost+=(l.fuelCost||0);
+      if(l.odometer) v.odos.push({ts:l.timestamp,odo:l.odometer});
+    });
+    if(!Object.keys(map).length){ tbody.innerHTML=`<tr><td colspan="8" style="color:var(--muted);">No data.</td></tr>`; return; }
+    tbody.innerHTML='';
+    Object.values(map).sort((a,b)=>b.trips-a.trips).forEach(v=>{
+      v.odos.sort((a,b)=>a.ts.localeCompare(b.ts));
+      let dist=0;
+      if(v.odos.length>=2){ const f=v.odos[0].odo,l2=v.odos[v.odos.length-1].odo; if(l2>f) dist=l2-f; }
+      const eff=v.fuel>0&&dist>0?(dist/v.fuel).toFixed(1):null;
+      const pct=eff?Math.min(100,(parseFloat(eff)/15)*100):0;
+      const col=pct>66?'var(--success)':pct>33?'var(--warning)':'var(--danger)';
+      tbody.innerHTML+=`
+        <tr>
+          <td><strong>${v.reg||'—'}</strong></td>
+          <td>${v.name||'—'}</td>
+          <td>${v.type||'—'}</td>
+          <td>${v.branch||'—'}</td>
+          <td>${v.trips}</td>
+          <td>${v.fuel.toFixed(1)}</td>
+          <td>${v.cost>0?v.cost.toLocaleString():'—'}</td>
+          <td>${eff?`<strong>${eff}</strong> km/L`:'—'}<div class="eff-bar-wrap"><div class="eff-bar" style="width:${pct}%;background:${col}"></div></div></td>
+        </tr>`;
+    });
+  }
+
+  // ── LOGS TAB ──────────────────────────────────────────────────────
+  window.renderLogsTab = async () => {
+    await loadLogs();
+    const branch   = document.getElementById('logFilterBranch').value;
+    const driverId = document.getElementById('logFilterDriver').value;
+    const fromVal  = document.getElementById('logFilterFrom').value;
+    const toVal    = document.getElementById('logFilterTo').value;
+    let logs=allLogs;
+    if(branch!=='all')   logs=logs.filter(l=>l.branch===branch);
+    if(driverId!=='all') logs=logs.filter(l=>l.driverId===driverId);
+    if(fromVal) logs=logs.filter(l=>l.timestamp>=new Date(fromVal).toISOString());
+    if(toVal)   logs=logs.filter(l=>l.timestamp<=new Date(toVal+'T23:59:59').toISOString());
+    document.getElementById('logCount').textContent=`${logs.length} entries`;
+    const tbody=document.getElementById('logsTableBody');
+    if(!logs.length){ tbody.innerHTML=`<tr><td colspan="11" style="color:var(--muted);">No logs found.</td></tr>`; return; }
+    tbody.innerHTML='';
+    logs.slice(0,200).forEach(l=>{
+      const dt=new Date(l.timestamp);
+      const dts=dt.toLocaleDateString('en-KE')+' '+dt.toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit'});
+      tbody.innerHTML+=`
+        <tr>
+          <td style="white-space:nowrap;font-size:.75rem;">${dts}</td>
+          <td>${l.driver||'—'}</td>
+          <td><strong>${l.vehicleReg||'—'}</strong></td>
+          <td>${l.branch||'—'}</td>
+          <td>${l.origin||'—'} → ${l.destination||'—'}</td>
+          <td>${l.purpose||'—'}</td>
+          <td>${l.logType||'—'}</td>
+          <td>${l.odometer?l.odometer.toLocaleString()+' km':'—'}</td>
+          <td>${l.fuelLitres||'—'}</td>
+          <td>${l.fuelCost?l.fuelCost.toLocaleString():'—'}</td>
+          <td style="max-width:100px;font-size:.72rem;color:var(--muted);">${l.notes||''}</td>
+        </tr>`;
+    });
+  };
+
+  // ── EXPORT CSV ────────────────────────────────────────────────────
+  window.exportCSV = () => {
+    const headers=['Date','Time','Driver','Vehicle Reg','Vehicle','Branch','Type','From','To','Purpose','Log Type','Odometer','Fuel (L)','Cost (KES)','Fuel Level (%)','Station','Notes'];
+    const rows=allLogs.map(l=>{
+      const dt=new Date(l.timestamp);
+      return [dt.toLocaleDateString('en-KE'),dt.toLocaleTimeString('en-KE'),
+        l.driver,l.vehicleReg,l.vehicleName,l.branch,l.vehicleType,
+        l.origin,l.destination,l.purpose,l.logType,l.odometer,
+        l.fuelLitres||'',l.fuelCost||'',l.fuelLevel||'',l.fuelStation||'',l.notes||''
+      ].map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(',');
+    });
+    const csv=[headers.join(','),...rows].join('\n');
+    const a=document.createElement('a');
+    a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+    a.download=`fleet-logs-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+  };
+
+  // ── TOAST ─────────────────────────────────────────────────────────
+  window.showToast = (msg,type='success') => {
+    const t=document.getElementById('toast');
+    t.textContent=msg; t.className=type+' show';
+    setTimeout(()=>t.className='',3000);
+  };
+</script>
+</body>
+</html>
